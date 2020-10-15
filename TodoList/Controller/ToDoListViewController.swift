@@ -7,27 +7,38 @@
 //
 
 import UIKit
+import CoreData
 
 class ToDoListViewController : UITableViewController {
 
     var itemArray = [Item]()
     
     // initialing UserDefaults
-//    let defaults = UserDefaults.standard
+   //let defaults = UserDefaults.standard
     
     //Initial path for FileManger(Where it will save)
-    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
+    //    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
+    
+    
+    // CoreData storage loacation or connecting with persistentContainer.
+    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        //Data storage location for current app(Where the data store?)
+//        print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
         
-        loadItems()
+      
         
         //loading data from UserDefaults
 //        if let items = defaults.array(forKey: "TodoListArray")  as? [String]{
 //            itemArray = items
 //        }
+        
+        
+          loadItems()
 
     }
 
@@ -53,15 +64,32 @@ class ToDoListViewController : UITableViewController {
     
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-       
+
         itemArray[indexPath.row].done = !itemArray[indexPath.row].done
-        tableView.reloadData()
-        
+
+        saveItems()
+
         tableView.deselectRow(at: indexPath, animated: true)
-        
-        
+
+
     }
     
+    
+    //CoreData Delete
+//    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+//
+//        //Deleting data with coreData
+//        context.delete(itemArray[indexPath.row])
+//        //after deleting from COreData we need to delete it from itemArray too.
+//        itemArray.remove(at: indexPath.row)
+//        //after deleting we need to save
+//        saveItems()
+//
+//          tableView.deselectRow(at: indexPath, animated: true)
+//
+//
+//      }
+      
    
     
     @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
@@ -72,13 +100,19 @@ class ToDoListViewController : UITableViewController {
         
         let action = UIAlertAction.init(title: "Add Item", style: .default) { (action) in
             
-            let newItem = Item()
-            newItem.title = textFiled.text!
             
+            //normal class declaration for UserDefaults and NSCoder(FileManager)
+//            let let newItem = Item()
+            
+            //declaring CoreData class or entity.
+            let newItem = Item(context: self.context)
+            newItem.title = textFiled.text!
+            newItem.done = false
+    
             self.itemArray.append(newItem)
             
             //save by UserDefaults
-//            self.defaults.set(self.itemArray, forKey: "TodoListArray")
+            //self.defaults.set(self.itemArray, forKey: "TodoListArray")
             
             
             //saving data with FileManager
@@ -109,30 +143,57 @@ class ToDoListViewController : UITableViewController {
     func saveItems(){
         
         //saving or encode data with FileManager
-        let encoder = PropertyListEncoder()
+//        let encoder = PropertyListEncoder()
+//
+//        do{
+//            let data = try encoder.encode(itemArray)
+//            try data.write(to: dataFilePath!)
+//        } catch {
+//            print("Error\(error)")
+//        }
+//        self.tableView.reloadData()
         
+        
+        
+        
+        //Saving data with CoreData
         do{
-            let data = try encoder.encode(itemArray)
-            try data.write(to: dataFilePath!)
+            
+            try context.save()
         } catch {
+            
             print("Error\(error)")
         }
+        
         self.tableView.reloadData()
     }
     
     
     func loadItems(){
         //loading data or decodeing data by FileManager
+
+//        if let data = try? Data(contentsOf: dataFilePath!) {
+//            let decoder = PropertyListDecoder()
+//            do{
+//                itemArray = try decoder.decode([Item].self, from: data)
+//
+//            } catch {
+//                print("Error decoding ,\(error)")
+//            }
+//        }
         
-        if let data = try? Data(contentsOf: dataFilePath!) {
-            let decoder = PropertyListDecoder()
-            do{
-                itemArray = try decoder.decode([Item].self, from: data)
         
-            } catch {
-                print("Error decoding ,\(error)")
-            }
+        //Loding or Read data with CoreData
+        
+        let request: NSFetchRequest = Item.fetchRequest()
+        do{
+            //fetching data from CoreData and then putting it in itemArray array.
+           itemArray = try context.fetch(request)
+        
+        }catch {
+            print("Error loading CoreData ,\(error)")
         }
+        
     }
     
     
