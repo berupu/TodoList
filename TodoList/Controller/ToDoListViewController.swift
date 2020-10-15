@@ -169,7 +169,7 @@ class ToDoListViewController : UITableViewController {
     }
     
     
-    func loadItems(){
+    func loadItems(with request : NSFetchRequest<Item> = Item.fetchRequest()){
         //loading data or decodeing data by FileManager
 
 //        if let data = try? Data(contentsOf: dataFilePath!) {
@@ -185,7 +185,7 @@ class ToDoListViewController : UITableViewController {
         
         //Loding or Read data with CoreData
         
-        let request: NSFetchRequest = Item.fetchRequest()
+//        let request: NSFetchRequest = Item.fetchRequest()      //this line goes to parameter
         do{
             //fetching data from CoreData and then putting it in itemArray array.
            itemArray = try context.fetch(request)
@@ -194,8 +194,27 @@ class ToDoListViewController : UITableViewController {
             print("Error loading CoreData ,\(error)")
         }
         
+        tableView.reloadData()
+        
     }
     
     
 }
 
+extension ToDoListViewController : UISearchBarDelegate {
+    
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        
+        let request : NSFetchRequest<Item> = Item.fetchRequest()
+        
+        //searching from request
+        request.predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
+        //now sorting
+        request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
+        
+        
+        loadItems(with: request)
+        
+    }
+    
+}
