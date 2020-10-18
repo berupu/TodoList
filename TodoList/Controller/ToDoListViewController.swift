@@ -13,6 +13,12 @@ class ToDoListViewController : UITableViewController {
 
     var itemArray = [Item]()
     
+    var selectedCategory : Category? {
+        didSet{
+            loadItems()
+        }
+    }
+    
     // initialing UserDefaults
    //let defaults = UserDefaults.standard
     
@@ -108,6 +114,7 @@ class ToDoListViewController : UITableViewController {
             let newItem = Item(context: self.context)
             newItem.title = textFiled.text!
             newItem.done = false
+            newItem.parentCategory = self.selectedCategory
     
             self.itemArray.append(newItem)
             
@@ -169,7 +176,7 @@ class ToDoListViewController : UITableViewController {
     }
     
     
-    func loadItems(with request : NSFetchRequest<Item> = Item.fetchRequest()){
+    func loadItems(with request : NSFetchRequest<Item> = Item.fetchRequest(), predicate: NSPredicate? = nil){
         //loading data or decodeing data by FileManager
 
 //        if let data = try? Data(contentsOf: dataFilePath!) {
@@ -181,6 +188,15 @@ class ToDoListViewController : UITableViewController {
 //                print("Error decoding ,\(error)")
 //            }
 //        }
+        
+        
+        let categoryPredicate = NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory!.name!)
+        
+        if let addtionalPredicate = predicate {
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [categoryPredicate,addtionalPredicate])
+        }else {
+            request.predicate = categoryPredicate
+        }
         
         
         //Loding or Read data with CoreData
@@ -208,12 +224,12 @@ extension ToDoListViewController : UISearchBarDelegate {
         let request : NSFetchRequest<Item> = Item.fetchRequest()
         
         //searching from request
-        request.predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
+        let predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
         //now sorting
         request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
         
         
-        loadItems(with: request)
+        loadItems(with: request, predicate: predicate)
         
     }
     
